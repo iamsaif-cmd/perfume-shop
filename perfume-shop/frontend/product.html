@@ -15,6 +15,7 @@
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
+    <label for="navToggle" class="nav-overlay"></label>
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
@@ -38,12 +39,14 @@
   const params = new URLSearchParams(window.location.search);
   const productId = params.get('id');
   let currentQty = 1;
+  let currentStock = 0;
 
   async function loadProduct() {
     const wrap = document.getElementById('productDetail');
     if (!productId) { wrap.innerHTML = `<p class="error-text">No product selected.</p>`; return; }
     try {
       const p = await apiFetch(`/products/${productId}`);
+      currentStock = p.stock;
       wrap.innerHTML = `
         <div class="pd-wrap">
           <img src="${p.image_url}" alt="${p.name}">
@@ -63,10 +66,10 @@
               <button onclick="changeQty(-1)">−</button>
               <span id="qtyDisplay">1</span>
               <button onclick="changeQty(1)">+</button>
-              <span style="color:var(--grey); font-size:.85rem;">${p.stock} in stock</span>
+              <span style="color:var(--grey); font-size:.85rem;">${p.stock > 0 ? p.stock + ' in stock' : 'Out of stock'}</span>
             </div>
 
-            <button class="btn-gold" onclick="addToCart('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+            <button class="btn-gold" id="addToCartBtn" onclick="addToCart('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
               ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
             </button>
           </div>
@@ -78,19 +81,36 @@
   }
 
   function changeQty(delta) {
-    currentQty = Math.max(1, currentQty + delta);
+    const next = currentQty + delta;
+    if (next < 1) return;
+    if (next > currentStock) { showToast(`Only ${currentStock} left in stock.`, 'error'); return; }
+    currentQty = next;
     document.getElementById('qtyDisplay').textContent = currentQty;
   }
 
   async function addToCart(id) {
+    const btn = document.getElementById('addToCartBtn');
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return; }
+
+    if (!session) {
+      guestAddToCart(id, currentQty);
+      refreshCartBadge();
+      showToast('Added to cart — log in at checkout to complete your order.', 'success');
+      return;
+    }
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Adding…';
     try {
       await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: id, quantity: currentQty }) });
       refreshCartBadge();
-      alert('Added to cart');
+      showToast('Added to cart', 'success');
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   }
 

@@ -34,6 +34,7 @@
 </div>
 
 <script src="js/supabaseClient.js"></script>
+<script src="js/api.js"></script>
 <script>
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -48,7 +49,11 @@
       errEl.style.display = 'block';
       return;
     }
-    window.location.href = 'index.html';
+
+    await mergeGuestCartIntoAccount();
+    const redirectTo = sessionStorage.getItem('redirectAfterLogin');
+    sessionStorage.removeItem('redirectAfterLogin');
+    window.location.href = redirectTo || 'index.html';
   });
 </script>
 </body>

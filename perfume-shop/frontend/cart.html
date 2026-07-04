@@ -15,6 +15,7 @@
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
+    <label for="navToggle" class="nav-overlay"></label>
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
@@ -47,12 +48,32 @@
 <script src="js/api.js"></script>
 <script>
   let cartData = [];
+  let isGuest = false;
 
   async function loadCart() {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return; }
-
     const wrap = document.getElementById('cartItems');
+    isGuest = !session;
+
+    if (isGuest) {
+      const guestItems = getGuestCart();
+      if (!guestItems.length) {
+        cartData = [];
+        wrap.innerHTML = `<p style="color:var(--grey);">Your cart is empty. <a href="index.html" style="color:var(--gold); text-decoration:underline;">Browse fragrances</a>.</p>`;
+        updateTotals();
+        return;
+      }
+      try {
+        const products = await Promise.all(guestItems.map(i => apiFetch(`/products/${i.product_id}`)));
+        cartData = guestItems.map((i, idx) => ({ id: i.product_id, quantity: i.quantity, product: products[idx] }));
+        renderCartItems();
+        updateTotals();
+      } catch (err) {
+        wrap.innerHTML = `<p class="error-text">${err.message}</p>`;
+      }
+      return;
+    }
+
     try {
       cartData = await apiFetch('/cart');
       if (!cartData.length) {
@@ -60,25 +81,30 @@
         updateTotals();
         return;
       }
-      wrap.innerHTML = cartData.map(item => `
-        <div class="cart-item">
-          <img src="${item.product.image_url}" alt="${item.product.name}">
-          <div style="flex:1;">
-            <h3 style="margin:0 0 4px; font-size:1.05rem;">${item.product.name}</h3>
-            <p style="color:var(--grey); font-size:.85rem; margin:0;">${formatPrice(item.product.price)} × ${item.quantity}</p>
-          </div>
-          <div class="qty-row" style="margin:0;">
-            <button onclick="updateQty('${item.id}', ${item.quantity - 1})">−</button>
-            <span>${item.quantity}</span>
-            <button onclick="updateQty('${item.id}', ${item.quantity + 1})">+</button>
-          </div>
-          <button class="icon-btn" onclick="removeItem('${item.id}')">Remove</button>
-        </div>
-      `).join('');
+      renderCartItems();
       updateTotals();
     } catch (err) {
       wrap.innerHTML = `<p class="error-text">${err.message}</p>`;
     }
+  }
+
+  function renderCartItems() {
+    const wrap = document.getElementById('cartItems');
+    wrap.innerHTML = cartData.map(item => `
+      <div class="cart-item">
+        <img src="${item.product.image_url}" alt="${item.product.name}">
+        <div style="flex:1;">
+          <h3 style="margin:0 0 4px; font-size:1.05rem;">${item.product.name}</h3>
+          <p style="color:var(--grey); font-size:.85rem; margin:0;">${formatPrice(item.product.price)} × ${item.quantity}</p>
+        </div>
+        <div class="qty-row" style="margin:0;">
+          <button onclick="updateQty('${item.id}', ${item.quantity - 1}, ${item.product.stock})">−</button>
+          <span>${item.quantity}</span>
+          <button onclick="updateQty('${item.id}', ${item.quantity + 1}, ${item.product.stock})">+</button>
+        </div>
+        <button class="icon-btn" onclick="removeItem('${item.id}')">Remove</button>
+      </div>
+    `).join('');
   }
 
   function updateTotals() {
@@ -88,32 +114,61 @@
     document.getElementById('checkoutBtn').disabled = cartData.length === 0;
   }
 
-  async function updateQty(id, newQty) {
+  async function updateQty(id, newQty, stock) {
     if (newQty < 1) return removeItem(id);
+    if (stock != null && newQty > stock) { showToast(`Only ${stock} left in stock.`, 'error'); return; }
+
+    if (isGuest) {
+      guestUpdateQty(id, newQty);
+      loadCart(); refreshCartBadge();
+      return;
+    }
     try {
       await apiFetch(`/cart/${id}`, { method: 'PUT', body: JSON.stringify({ quantity: newQty }) });
       loadCart(); refreshCartBadge();
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   async function removeItem(id) {
+    if (isGuest) {
+      guestRemoveItem(id);
+      loadCart(); refreshCartBadge();
+      return;
+    }
     try {
       await apiFetch(`/cart/${id}`, { method: 'DELETE' });
       loadCart(); refreshCartBadge();
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   async function checkout() {
+    // Guests must log in to place a real order — but we don't lose their cart.
+    if (isGuest) {
+      sessionStorage.setItem('redirectAfterLogin', 'cart.html');
+      showToast('Please log in to complete your order.', 'default');
+      setTimeout(() => { window.location.href = 'login.html'; }, 900);
+      return;
+    }
+
+    const btn = document.getElementById('checkoutBtn');
     const msg = document.getElementById('checkoutMsg');
+    btn.disabled = true;
+    btn.textContent = 'Placing order…';
+
     try {
       const result = await apiFetch('/orders/checkout', { method: 'POST' });
       msg.className = 'success-text';
       msg.textContent = `Order placed! Order #${result.order.id.slice(0,8)}`;
+      showToast('Order placed successfully!', 'success');
       cartData = [];
       loadCart(); refreshCartBadge();
     } catch (err) {
       msg.className = 'error-text';
       msg.textContent = err.message;
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = cartData.length === 0;
+      btn.textContent = 'Checkout';
     }
   }
 

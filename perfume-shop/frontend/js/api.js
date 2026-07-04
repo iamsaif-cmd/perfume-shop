@@ -30,7 +30,14 @@ async function refreshCartBadge() {
   const badge = document.getElementById('cartBadge');
   if (!badge) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) { badge.style.display = 'none'; return; }
+
+  if (!session) {
+    const guestCount = getGuestCart().reduce((sum, i) => sum + i.quantity, 0);
+    badge.textContent = guestCount;
+    badge.style.display = guestCount > 0 ? 'inline-flex' : 'none';
+    return;
+  }
+
   try {
     const items = await apiFetch('/cart');
     const count = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -40,6 +47,15 @@ async function refreshCartBadge() {
     badge.style.display = 'none';
   }
 }
+
+// Closes the mobile dropdown menu whenever a nav link is tapped
+document.addEventListener('DOMContentLoaded', () => {
+  const navToggle = document.getElementById('navToggle');
+  if (!navToggle) return;
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    a.addEventListener('click', () => { navToggle.checked = false; });
+  });
+});
 
 // Shows/hides nav links depending on auth + admin state
 async function renderAuthNav() {
@@ -64,6 +80,8 @@ async function renderAuthNav() {
       .single();
 
     if (adminLink) adminLink.style.display = profile?.is_admin ? 'inline' : 'none';
+
+    await mergeGuestCartIntoAccount();
   } else {
     authLink.textContent = 'Login';
     authLink.href = 'login.html';
@@ -71,6 +89,77 @@ async function renderAuthNav() {
   }
 
   refreshCartBadge();
+}
+
+// ============ TOAST NOTIFICATIONS ============
+// Replaces jarring alert() popups with small glass pills that fade in/out.
+function ensureToastStack() {
+  let stack = document.getElementById('toastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toastStack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+function showToast(message, type = 'default', duration = 3000) {
+  const stack = ensureToastStack();
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  stack.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('leaving');
+    setTimeout(() => toast.remove(), 350);
+  }, duration);
+}
+
+// ============ GUEST CART (localStorage) ============
+// Real stores let people add to cart before creating an account — we mirror
+// that here, then silently merge the guest cart into their real cart the
+// moment they log in. Login is only required at checkout, not at "Add to Cart".
+const GUEST_CART_KEY = 'essence_guest_cart';
+
+function getGuestCart() {
+  try { return JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || []; }
+  catch { return []; }
+}
+function setGuestCart(items) {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+}
+function guestAddToCart(productId, quantity = 1) {
+  const cart = getGuestCart();
+  const existing = cart.find(i => i.product_id === productId);
+  if (existing) existing.quantity += quantity;
+  else cart.push({ product_id: productId, quantity });
+  setGuestCart(cart);
+}
+function guestUpdateQty(productId, quantity) {
+  let cart = getGuestCart();
+  if (quantity < 1) {
+    cart = cart.filter(i => i.product_id !== productId);
+  } else {
+    const item = cart.find(i => i.product_id === productId);
+    if (item) item.quantity = quantity;
+  }
+  setGuestCart(cart);
+}
+function guestRemoveItem(productId) {
+  setGuestCart(getGuestCart().filter(i => i.product_id !== productId));
+}
+
+// Pushes every locally-stored guest cart item into the real DB cart.
+// Called right after a successful login. Silently skips items that fail
+// (e.g. a product that went out of stock in the meantime).
+async function mergeGuestCartIntoAccount() {
+  const guestItems = getGuestCart();
+  if (!guestItems.length) return;
+  for (const item of guestItems) {
+    try {
+      await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: item.product_id, quantity: item.quantity }) });
+    } catch { /* skip silently — item may be gone or out of stock */ }
+  }
+  setGuestCart([]);
 }
 
 document.addEventListener('DOMContentLoaded', renderAuthNav);

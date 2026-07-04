@@ -15,6 +15,7 @@
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
+    <label for="navToggle" class="nav-overlay"></label>
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
@@ -141,6 +142,7 @@
 
   async function saveProduct() {
     const msg = document.getElementById('adminMsg');
+    const saveBtn = document.querySelector('.admin-form .btn-gold');
     const id = document.getElementById('editId').value;
     const payload = {
       name: document.getElementById('f_name').value,
@@ -157,21 +159,32 @@
 
     if (!payload.name || !payload.price) {
       msg.className = 'error-text'; msg.textContent = 'Name and price are required.';
+      showToast('Name and price are required.', 'error');
       return;
     }
+
+    saveBtn.disabled = true;
+    const originalLabel = saveBtn.textContent;
+    saveBtn.textContent = id ? 'Updating…' : 'Saving…';
 
     try {
       if (id) {
         await apiFetch(`/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
         msg.className = 'success-text'; msg.textContent = 'Fragrance updated.';
+        showToast('Fragrance updated', 'success');
       } else {
         await apiFetch('/products', { method: 'POST', body: JSON.stringify(payload) });
         msg.className = 'success-text'; msg.textContent = 'Fragrance added.';
+        showToast('Fragrance added', 'success');
       }
       resetForm();
       loadProducts();
     } catch (err) {
       msg.className = 'error-text'; msg.textContent = err.message;
+      showToast(err.message, 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalLabel;
     }
   }
 
@@ -179,9 +192,10 @@
     if (!confirm('Delete this fragrance?')) return;
     try {
       await apiFetch(`/products/${id}`, { method: 'DELETE' });
+      showToast('Fragrance deleted', 'success');
       loadProducts();
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
     }
   }
 
