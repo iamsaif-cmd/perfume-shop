@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Essence — Fine Fragrance</title>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar-essence">
+  <div class="container">
+    <a href="index.html" class="logo">ESSEN<span>CE</span></a>
+    <div class="nav-links">
+      <a href="index.html">Shop</a>
+      <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
+      <a id="navAuthLink" href="login.html">Login</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-blob"></div>
+  <div class="container">
+    <p class="eyebrow reveal show">Small-Batch Perfumery</p>
+    <h1 class="reveal show">Scent is<br>the quietest<br>kind of memory.</h1>
+    <div class="rule reveal show"></div>
+    <p class="reveal show">Sixteen fragrances, each built note by note — top, heart, and base — for people who want to be remembered without saying a word.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="filter-bar" id="filterBar">
+      <button data-cat="all" class="active">All</button>
+      <button data-cat="women">Women</button>
+      <button data-cat="men">Men</button>
+      <button data-cat="unisex">Unisex</button>
+    </div>
+    <div class="product-grid" id="productGrid">
+      <p style="color:var(--grey);">Loading fragrances…</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>© 2026 Essence Perfumery — Handcrafted fragrance, made in small batches.</p>
+  </div>
+</footer>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/api.js"></script>
+<script>
+  let currentCategory = 'all';
+
+  async function loadProducts() {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = `<p style="color:var(--grey);">Loading fragrances…</p>`;
+    try {
+      const url = currentCategory === 'all' ? '/products' : `/products?category=${currentCategory}`;
+      const products = await apiFetch(url);
+      if (!products.length) {
+        grid.innerHTML = `<p style="color:var(--grey);">No fragrances found in this category yet.</p>`;
+        return;
+      }
+      grid.innerHTML = products.map((p, i) => `
+        <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms;">
+          <a href="product.html?id=${p.id}">
+            <img src="${p.image_url}" alt="${p.name}">
+          </a>
+          <div class="product-body">
+            <p class="cat">${p.category}</p>
+            <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
+            <p class="price">${formatPrice(p.price)}</p>
+            <button class="btn-outline add-btn" onclick="quickAdd('${p.id}')">Add to Cart</button>
+          </div>
+        </div>
+      `).join('');
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.product-card.reveal').forEach(el => el.classList.add('show'));
+      });
+    } catch (err) {
+      grid.innerHTML = `<p class="error-text">Couldn't load fragrances: ${err.message}. Is the backend running?</p>`;
+    }
+  }
+
+  async function quickAdd(productId) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return; }
+    try {
+      await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: productId, quantity: 1 }) });
+      refreshCartBadge();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  document.getElementById('filterBar').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#filterBar button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentCategory = e.target.dataset.cat;
+    loadProducts();
+  });
+
+  loadProducts();
+</script>
+</body>
+</html>
