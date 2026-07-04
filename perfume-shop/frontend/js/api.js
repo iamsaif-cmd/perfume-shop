@@ -74,3 +74,17 @@ async function renderAuthNav() {
 }
 
 document.addEventListener('DOMContentLoaded', renderAuthNav);
+
+// Elastic scroll-reveal — applies to any .reveal element present at load time.
+// Dynamically-injected content (like product cards) triggers its own reveal separately.
+document.addEventListener('DOMContentLoaded', () => {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('show');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal:not(.show)').forEach(el => io.observe(el));
+});

@@ -23,11 +23,12 @@
 </nav>
 
 <section class="hero">
+  <div class="hero-blob"></div>
   <div class="container">
-    <p class="eyebrow">Small-Batch Perfumery</p>
-    <h1>Scent is<br>the quietest<br>kind of memory.</h1>
-    <div class="rule"></div>
-    <p>Six fragrances, each built note by note — top, heart, and base — for people who want to be remembered without saying a word.</p>
+    <p class="eyebrow reveal show">Small-Batch Perfumery</p>
+    <h1 class="reveal show">Scent is<br>the quietest<br>kind of memory.</h1>
+    <div class="rule reveal show"></div>
+    <p class="reveal show">Sixteen fragrances, each built note by note — top, heart, and base — for people who want to be remembered without saying a word.</p>
   </div>
 </section>
 
@@ -66,8 +67,8 @@
         grid.innerHTML = `<p style="color:var(--grey);">No fragrances found in this category yet.</p>`;
         return;
       }
-      grid.innerHTML = products.map(p => `
-        <div class="product-card">
+      grid.innerHTML = products.map((p, i) => `
+        <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms;">
           <a href="product.html?id=${p.id}">
             <img src="${p.image_url}" alt="${p.name}">
           </a>
@@ -79,6 +80,9 @@
           </div>
         </div>
       `).join('');
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.product-card.reveal').forEach(el => el.classList.add('show'));
+      });
     } catch (err) {
       grid.innerHTML = `<p class="error-text">Couldn't load fragrances: ${err.message}. Is the backend running?</p>`;
     }

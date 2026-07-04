@@ -6,4 +6,4 @@ const SUPABASE_ANON_KEY = "sb_publishable_Szap6ZWEGiMyE1SINykazQ_4ssYxEFs";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Backend API base — change if you deploy the backend elsewhere
-const API_BASE = "https://perfume-shop-mrlf.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
