@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Essence — Your Orders</title>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar-sticky">
+  <div class="navbar-essence">
+    <a href="index.html" class="logo">ESSEN<span>CE</span></a>
+    <input type="checkbox" id="navToggle">
+    <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
+    <label for="navToggle" class="nav-overlay"></label>
+    <div class="nav-links">
+      <a href="index.html">Shop</a>
+      <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a href="wishlist.html">Wishlist</a>
+      <a id="navOrdersLink" href="orders.html" style="display:none;">Orders</a>
+      <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
+      <a id="navAuthLink" href="login.html">Login</a>
+    </div>
+  </div>
+</nav>
+
+<section>
+  <div class="container">
+    <h1 style="font-size:2rem;">Your Orders</h1>
+    <div class="rule"></div>
+    <div id="ordersWrap" style="margin-top:24px;">
+      <p style="color:var(--grey);">Loading…</p>
+    </div>
+  </div>
+</section>
+
+<footer><div class="container"><p>© 2026 Essence Perfumery</p></div></footer>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/api.js"></script>
+<script>
+  async function loadOrders() {
+    const wrap = document.getElementById('ordersWrap');
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      sessionStorage.setItem('redirectAfterLogin', 'orders.html');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    try {
+      const orders = await apiFetch('/orders');
+      if (!orders.length) {
+        wrap.innerHTML = `<p style="color:var(--grey);">No orders yet. <a href="index.html" style="color:var(--gold); text-decoration:underline;">Start shopping</a>.</p>`;
+        return;
+      }
+      wrap.innerHTML = orders.map(order => `
+        <div class="cart-summary" style="margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div>
+              <p style="margin:0; font-weight:500;">Order #${order.id.slice(0, 8)}</p>
+              <p style="margin:2px 0 0; font-size:.78rem; color:var(--grey);">${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <span class="eyebrow" style="background:rgba(212,175,106,0.18); padding:6px 14px; border-radius:999px;">${order.status}</span>
+          </div>
+          ${(order.order_items || []).map(item => `
+            <div style="display:flex; justify-content:space-between; font-size:.88rem; padding:6px 0; color:var(--grey);">
+              <span>${item.product?.name || 'Product'} × ${item.quantity}</span>
+              <span>${formatPrice(item.price * item.quantity)}</span>
+            </div>
+          `).join('')}
+          <div class="summary-row total"><span>Total</span><span>${formatPrice(order.total)}</span></div>
+        </div>
+      `).join('');
+    } catch (err) {
+      wrap.innerHTML = `
+        <div style="text-align:center;">
+          <p class="error-text">${err.message}</p>
+          <button class="retry-btn" onclick="loadOrders()">Retry</button>
+        </div>`;
+    }
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

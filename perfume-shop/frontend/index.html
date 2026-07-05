@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="Essence — small-batch, handcrafted perfumes. Sixteen fragrances built note by note, top to base.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
 <title>Essence — Fine Fragrance</title>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -10,8 +12,8 @@
 </head>
 <body>
 
-<nav class="navbar-essence">
-  <div class="container">
+<nav class="navbar-sticky">
+  <div class="navbar-essence">
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
@@ -19,6 +21,8 @@
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a href="wishlist.html">Wishlist</a>
+      <a id="navOrdersLink" href="orders.html" style="display:none;">Orders</a>
       <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
       <a id="navAuthLink" href="login.html">Login</a>
     </div>
@@ -41,12 +45,26 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="Search fragrances…">
     </div>
-    <div class="filter-bar" id="filterBar">
-      <button data-cat="all" class="active">All</button>
-      <button data-cat="women">Women</button>
-      <button data-cat="men">Men</button>
-      <button data-cat="unisex">Unisex</button>
+    <div class="toolbar-row">
+      <div class="filter-bar" id="filterBar">
+        <button data-cat="all" class="active">All</button>
+        <button data-cat="women">Women</button>
+        <button data-cat="men">Men</button>
+        <button data-cat="unisex">Unisex</button>
+      </div>
+      <select class="sort-select" id="sortSelect">
+        <option value="default">Sort: Featured</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="name-asc">Name: A–Z</option>
+      </select>
     </div>
+
+    <div id="recentlyViewedSection" style="display:none; margin-bottom:36px;">
+      <p class="eyebrow" style="margin-bottom:12px;">Recently Viewed</p>
+      <div class="rail" id="recentlyViewedRail"></div>
+    </div>
+
     <div class="product-grid" id="productGrid">
       <div class="skeleton-card"></div>
       <div class="skeleton-card"></div>
@@ -67,10 +85,49 @@
 <script>
   let currentCategory = 'all';
   let currentSearch = '';
+  let currentSort = 'default';
   let searchDebounce;
+  let lastProducts = [];
 
   function skeletonHTML(n = 4) {
     return Array.from({ length: n }).map(() => `<div class="skeleton-card"></div>`).join('');
+  }
+
+  function sortProducts(products) {
+    const list = [...products];
+    if (currentSort === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else if (currentSort === 'price-desc') list.sort((a, b) => b.price - a.price);
+    else if (currentSort === 'name-asc') list.sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }
+
+  function renderGrid(products) {
+    const grid = document.getElementById('productGrid');
+    if (!products.length) {
+      grid.innerHTML = `<p style="color:var(--grey);">No fragrances match that search.</p>`;
+      return;
+    }
+    grid.innerHTML = products.map((p, i) => `
+      <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms; position:relative;">
+        <button class="wish-btn ${isWishlisted(p.id) ? 'active' : ''}" aria-label="Toggle wishlist" onclick="handleWishlist(event, '${p.id}')">
+          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </button>
+        <a href="product.html?id=${p.id}">
+          <img src="${p.image_url}" alt="${p.name}">
+        </a>
+        <div class="product-body">
+          <p class="cat">${p.category}</p>
+          <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
+          <p class="price">${formatPrice(p.price)}</p>
+          <button class="btn-outline add-btn" onclick="quickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+            ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.product-card.reveal').forEach(el => el.classList.add('show'));
+    });
   }
 
   async function loadProducts() {
@@ -82,31 +139,43 @@
       if (currentSearch) params.set('search', currentSearch);
       const query = params.toString() ? `?${params.toString()}` : '';
       const products = await apiFetch(`/products${query}`);
-
-      if (!products.length) {
-        grid.innerHTML = `<p style="color:var(--grey);">No fragrances match that search.</p>`;
-        return;
-      }
-      grid.innerHTML = products.map((p, i) => `
-        <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms;">
-          <a href="product.html?id=${p.id}">
-            <img src="${p.image_url}" alt="${p.name}">
-          </a>
-          <div class="product-body">
-            <p class="cat">${p.category}</p>
-            <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
-            <p class="price">${formatPrice(p.price)}</p>
-            <button class="btn-outline add-btn" onclick="quickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
-              ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-          </div>
-        </div>
-      `).join('');
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.product-card.reveal').forEach(el => el.classList.add('show'));
-      });
+      lastProducts = products;
+      renderGrid(sortProducts(products));
     } catch (err) {
-      grid.innerHTML = `<p class="error-text">Couldn't load fragrances: ${err.message}. The backend may be waking up — try again in a few seconds.</p>`;
+      grid.innerHTML = `
+        <div style="grid-column:1/-1; text-align:center;">
+          <p class="error-text">Couldn't load fragrances: ${err.message}. The backend may be waking up.</p>
+          <button class="retry-btn" onclick="loadProducts()">Retry</button>
+        </div>`;
+    }
+  }
+
+  function handleWishlist(e, id) {
+    e.preventDefault();
+    const nowActive = toggleWishlist(id);
+    e.currentTarget.classList.toggle('active', nowActive);
+    showToast(nowActive ? 'Added to wishlist' : 'Removed from wishlist', 'success', 1800);
+  }
+
+  async function loadRecentlyViewed() {
+    const ids = getRecentlyViewed();
+    const section = document.getElementById('recentlyViewedSection');
+    const rail = document.getElementById('recentlyViewedRail');
+    if (!ids.length) { section.style.display = 'none'; return; }
+    try {
+      const products = await Promise.all(ids.map(id => apiFetch(`/products/${id}`).catch(() => null)));
+      const valid = products.filter(Boolean);
+      if (!valid.length) { section.style.display = 'none'; return; }
+      rail.innerHTML = valid.map(p => `
+        <a class="rail-card" href="product.html?id=${p.id}">
+          <img src="${p.image_url}" alt="${p.name}">
+          <p>${p.name}</p>
+          <p class="price">${formatPrice(p.price)}</p>
+        </a>
+      `).join('');
+      section.style.display = 'block';
+    } catch {
+      section.style.display = 'none';
     }
   }
 
@@ -137,6 +206,11 @@
     loadProducts();
   });
 
+  document.getElementById('sortSelect').addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    renderGrid(sortProducts(lastProducts));
+  });
+
   document.getElementById('searchInput').addEventListener('input', (e) => {
     clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
@@ -146,6 +220,7 @@
   });
 
   loadProducts();
+  loadRecentlyViewed();
 </script>
 </body>
 </html>

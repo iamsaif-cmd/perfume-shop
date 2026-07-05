@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Essence — Wishlist</title>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar-sticky">
+  <div class="navbar-essence">
+    <a href="index.html" class="logo">ESSEN<span>CE</span></a>
+    <input type="checkbox" id="navToggle">
+    <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
+    <label for="navToggle" class="nav-overlay"></label>
+    <div class="nav-links">
+      <a href="index.html">Shop</a>
+      <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a href="wishlist.html">Wishlist</a>
+      <a id="navOrdersLink" href="orders.html" style="display:none;">Orders</a>
+      <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
+      <a id="navAuthLink" href="login.html">Login</a>
+    </div>
+  </div>
+</nav>
+
+<section>
+  <div class="container">
+    <h1 style="font-size:2rem;">Your Wishlist</h1>
+    <div class="rule"></div>
+    <div class="product-grid" id="wishlistGrid" style="margin-top:24px;">
+      <p style="color:var(--grey);">Loading…</p>
+    </div>
+  </div>
+</section>
+
+<footer><div class="container"><p>© 2026 Essence Perfumery</p></div></footer>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/api.js"></script>
+<script>
+  async function loadWishlist() {
+    const grid = document.getElementById('wishlistGrid');
+    const ids = getWishlist();
+    if (!ids.length) {
+      grid.innerHTML = `<p style="color:var(--grey);">Your wishlist is empty. <a href="index.html" style="color:var(--gold); text-decoration:underline;">Browse fragrances</a>.</p>`;
+      return;
+    }
+    try {
+      const products = (await Promise.all(ids.map(id => apiFetch(`/products/${id}`).catch(() => null)))).filter(Boolean);
+      if (!products.length) {
+        grid.innerHTML = `<p style="color:var(--grey);">Your wishlist is empty.</p>`;
+        return;
+      }
+      grid.innerHTML = products.map((p, i) => `
+        <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms; position:relative;">
+          <button class="wish-btn active" aria-label="Remove from wishlist" onclick="removeFromWishlist('${p.id}')">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+          </button>
+          <a href="product.html?id=${p.id}"><img src="${p.image_url}" alt="${p.name}"></a>
+          <div class="product-body">
+            <p class="cat">${p.category}</p>
+            <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
+            <p class="price">${formatPrice(p.price)}</p>
+            <button class="btn-outline add-btn" onclick="quickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+              ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.product-card.reveal').forEach(el => el.classList.add('show'));
+      });
+    } catch (err) {
+      grid.innerHTML = `<p class="error-text">${err.message}</p>`;
+    }
+  }
+
+  function removeFromWishlist(id) {
+    toggleWishlist(id);
+    showToast('Removed from wishlist', 'success', 1800);
+    loadWishlist();
+  }
+
+  async function quickAdd(productId) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      guestAddToCart(productId, 1);
+      refreshCartBadge();
+      showToast('Added to cart — log in at checkout to complete your order.', 'success');
+      return;
+    }
+    try {
+      await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: productId, quantity: 1 }) });
+      refreshCartBadge();
+      showToast('Added to cart', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  loadWishlist();
+</script>
+</body>
+</html>

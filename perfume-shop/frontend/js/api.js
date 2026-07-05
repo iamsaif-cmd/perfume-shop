@@ -62,7 +62,10 @@ async function renderAuthNav() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   const authLink = document.getElementById('navAuthLink');
   const adminLink = document.getElementById('navAdminLink');
+  const ordersLink = document.getElementById('navOrdersLink');
   if (!authLink) return;
+
+  if (ordersLink) ordersLink.style.display = session ? 'inline' : 'none';
 
   if (session) {
     authLink.textContent = 'Logout';
@@ -160,6 +163,85 @@ async function mergeGuestCartIntoAccount() {
     } catch { /* skip silently — item may be gone or out of stock */ }
   }
   setGuestCart([]);
+}
+
+// ============ WISHLIST (localStorage) ============
+const WISHLIST_KEY = 'essence_wishlist';
+function getWishlist() {
+  try { return JSON.parse(localStorage.getItem(WISHLIST_KEY)) || []; }
+  catch { return []; }
+}
+function isWishlisted(productId) {
+  return getWishlist().includes(productId);
+}
+function toggleWishlist(productId) {
+  let list = getWishlist();
+  if (list.includes(productId)) {
+    list = list.filter(id => id !== productId);
+  } else {
+    list.push(productId);
+  }
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(list));
+  return list.includes(productId);
+}
+
+// ============ RECENTLY VIEWED (localStorage) ============
+const RECENT_KEY = 'essence_recently_viewed';
+function trackRecentlyViewed(productId) {
+  let list = getRecentlyViewed().filter(id => id !== productId);
+  list.unshift(productId);
+  list = list.slice(0, 8);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+}
+function getRecentlyViewed() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; }
+  catch { return []; }
+}
+
+// ============ BACK TO TOP ============
+function initBackToTop() {
+  if (document.getElementById('backToTop')) return;
+  const btn = document.createElement('button');
+  btn.id = 'backToTop';
+  btn.setAttribute('aria-label', 'Back to top');
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+  btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.body.appendChild(btn);
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('show', window.scrollY > 400);
+  }, { passive: true });
+}
+document.addEventListener('DOMContentLoaded', initBackToTop);
+
+// ============ CUSTOM CONFIRM MODAL ============
+// Replaces the native confirm() popup with a glassy on-brand dialog.
+// Usage: const ok = await confirmModal('Delete this fragrance?'); if (ok) { ... }
+function confirmModal(message, confirmLabel = 'Delete', cancelLabel = 'Cancel') {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <h3>Are you sure?</h3>
+        <p>${message}</p>
+        <div class="modal-actions">
+          <button class="btn-outline" data-action="cancel">${cancelLabel}</button>
+          <button class="btn-gold" data-action="confirm">${confirmLabel}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+
+    function close(result) {
+      overlay.classList.remove('show');
+      setTimeout(() => overlay.remove(), 300);
+      resolve(result);
+    }
+    overlay.querySelector('[data-action="confirm"]').onclick = () => close(true);
+    overlay.querySelector('[data-action="cancel"]').onclick = () => close(false);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', renderAuthNav);

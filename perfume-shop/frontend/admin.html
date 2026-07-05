@@ -10,8 +10,8 @@
 </head>
 <body>
 
-<nav class="navbar-essence">
-  <div class="container">
+<nav class="navbar-sticky">
+  <div class="navbar-essence">
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
@@ -19,6 +19,8 @@
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a href="wishlist.html">Wishlist</a>
+      <a id="navOrdersLink" href="orders.html" style="display:none;">Orders</a>
       <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
       <a id="navAuthLink" href="login.html">Login</a>
     </div>
@@ -33,6 +35,8 @@
     <div id="accessCheck"></div>
 
     <div id="adminContent" style="display:none;">
+      <div class="stat-cards" id="statCards"></div>
+
       <div class="admin-form reveal show">
         <h3 id="formTitle" style="margin-top:0;">Add New Fragrance</h3>
         <input type="hidden" id="editId">
@@ -101,6 +105,7 @@
 
   async function loadProducts() {
     allProducts = await apiFetch('/products');
+    renderStatCards();
     const tbody = document.getElementById('productTableBody');
     tbody.innerHTML = allProducts.map(p => `
       <tr>
@@ -115,6 +120,20 @@
         </td>
       </tr>
     `).join('');
+  }
+
+  function renderStatCards() {
+    const totalProducts = allProducts.length;
+    const totalStockValue = allProducts.reduce((sum, p) => sum + p.price * p.stock, 0);
+    const lowStock = allProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+    const outOfStock = allProducts.filter(p => p.stock === 0).length;
+
+    document.getElementById('statCards').innerHTML = `
+      <div class="stat-card"><div class="num">${totalProducts}</div><div class="lbl">Total Fragrances</div></div>
+      <div class="stat-card"><div class="num">${formatPrice(totalStockValue)}</div><div class="lbl">Inventory Value</div></div>
+      <div class="stat-card"><div class="num">${lowStock}</div><div class="lbl">Low Stock (≤5)</div></div>
+      <div class="stat-card"><div class="num">${outOfStock}</div><div class="lbl">Out of Stock</div></div>
+    `;
   }
 
   function editProduct(id) {
@@ -191,7 +210,9 @@
   }
 
   async function deleteProduct(id) {
-    if (!confirm('Delete this fragrance?')) return;
+    const product = allProducts.find(p => p.id === id);
+    const ok = await confirmModal(`This will permanently remove "${product?.name || 'this fragrance'}" from your store.`);
+    if (!ok) return;
     try {
       await apiFetch(`/products/${id}`, { method: 'DELETE' });
       showToast('Fragrance deleted', 'success');

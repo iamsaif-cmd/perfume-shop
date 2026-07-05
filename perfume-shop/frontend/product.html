@@ -10,8 +10,8 @@
 </head>
 <body>
 
-<nav class="navbar-essence">
-  <div class="container">
+<nav class="navbar-sticky">
+  <div class="navbar-essence">
     <a href="index.html" class="logo">ESSEN<span>CE</span></a>
     <input type="checkbox" id="navToggle">
     <label for="navToggle" class="burger"><span></span><span></span><span></span></label>
@@ -19,6 +19,8 @@
     <div class="nav-links">
       <a href="index.html">Shop</a>
       <a href="cart.html">Cart <span id="cartBadge" class="cart-badge" style="display:none;"></span></a>
+      <a href="wishlist.html">Wishlist</a>
+      <a id="navOrdersLink" href="orders.html" style="display:none;">Orders</a>
       <a id="navAdminLink" href="admin.html" style="display:none;">Admin</a>
       <a id="navAuthLink" href="login.html">Login</a>
     </div>
@@ -30,6 +32,18 @@
     <p style="color:var(--grey);">Loading…</p>
   </div>
 </section>
+
+<section id="relatedSection" style="display:none; padding-top:0;">
+  <div class="container">
+    <p class="eyebrow" style="margin-bottom:12px;">You May Also Like</p>
+    <div class="rail" id="relatedRail"></div>
+  </div>
+</section>
+
+<div class="sticky-add-bar" id="stickyBar" style="display:none;">
+  <span class="price" id="stickyPrice"></span>
+  <button class="btn-gold" id="stickyAddBtn" onclick="addToCart(productId)">Add to Cart</button>
+</div>
 
 <footer><div class="container"><p>© 2026 Essence Perfumery</p></div></footer>
 
@@ -49,7 +63,12 @@
       currentStock = p.stock;
       wrap.innerHTML = `
         <div class="pd-wrap">
-          <img src="${p.image_url}" alt="${p.name}">
+          <div style="position:relative;">
+            <button class="wish-btn ${isWishlisted(p.id) ? 'active' : ''}" aria-label="Toggle wishlist" onclick="handleWishlist('${p.id}', this)">
+              <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            </button>
+            <img src="${p.image_url}" alt="${p.name}">
+          </div>
           <div>
             <p class="eyebrow">${p.brand || 'Essence House'} · ${p.category}</p>
             <h1 style="font-size:2.2rem; margin:8px 0;">${p.name}</h1>
@@ -75,8 +94,49 @@
           </div>
         </div>
       `;
+
+      // Mobile sticky add-to-cart bar
+      const stickyBar = document.getElementById('stickyBar');
+      document.getElementById('stickyPrice').textContent = formatPrice(p.price);
+      const stickyBtn = document.getElementById('stickyAddBtn');
+      stickyBtn.disabled = p.stock === 0;
+      stickyBtn.textContent = p.stock === 0 ? 'Out of Stock' : 'Add to Cart';
+      stickyBar.style.display = 'flex';
+
+      trackRecentlyViewed(p.id);
+      loadRelated(p.category, p.id);
     } catch (err) {
-      wrap.innerHTML = `<p class="error-text">Couldn't load product: ${err.message}</p>`;
+      wrap.innerHTML = `
+        <div style="text-align:center;">
+          <p class="error-text">Couldn't load product: ${err.message}</p>
+          <button class="retry-btn" onclick="loadProduct()">Retry</button>
+        </div>`;
+    }
+  }
+
+  function handleWishlist(id, btn) {
+    const nowActive = toggleWishlist(id);
+    btn.classList.toggle('active', nowActive);
+    showToast(nowActive ? 'Added to wishlist' : 'Removed from wishlist', 'success', 1800);
+  }
+
+  async function loadRelated(category, excludeId) {
+    const section = document.getElementById('relatedSection');
+    const rail = document.getElementById('relatedRail');
+    try {
+      const products = await apiFetch(`/products?category=${category}`);
+      const related = products.filter(p => p.id !== excludeId).slice(0, 8);
+      if (!related.length) { section.style.display = 'none'; return; }
+      rail.innerHTML = related.map(p => `
+        <a class="rail-card" href="product.html?id=${p.id}">
+          <img src="${p.image_url}" alt="${p.name}">
+          <p>${p.name}</p>
+          <p class="price">${formatPrice(p.price)}</p>
+        </a>
+      `).join('');
+      section.style.display = 'block';
+    } catch {
+      section.style.display = 'none';
     }
   }
 
@@ -90,6 +150,7 @@
 
   async function addToCart(id) {
     const btn = document.getElementById('addToCartBtn');
+    const stickyBtn = document.getElementById('stickyAddBtn');
     const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
@@ -99,9 +160,7 @@
       return;
     }
 
-    btn.disabled = true;
-    const originalText = btn.textContent;
-    btn.textContent = 'Adding…';
+    [btn, stickyBtn].forEach(b => { if (b) { b.disabled = true; b.dataset.original = b.textContent; b.textContent = 'Adding…'; } });
     try {
       await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: id, quantity: currentQty }) });
       refreshCartBadge();
@@ -109,8 +168,7 @@
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
-      btn.disabled = false;
-      btn.textContent = originalText;
+      [btn, stickyBtn].forEach(b => { if (b) { b.disabled = false; b.textContent = b.dataset.original || 'Add to Cart'; } });
     }
   }
 
