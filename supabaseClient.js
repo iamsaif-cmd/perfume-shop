@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Essence — Sign Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar-essence">
+  <div class="container">
+    <a href="index.html" class="logo">ESSEN<span>CE</span></a>
+    <div class="nav-links">
+      <a href="index.html">Shop</a>
+      <a href="login.html">Login</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-box reveal">
+  <h2 style="text-align:center; margin-bottom:20px;">Create Account</h2>
+  <p id="formError" class="error-text" style="display:none;"></p>
+  <p id="formSuccess" class="success-text" style="display:none;"></p>
+  <form id="signupForm">
+    <input type="text" id="fullName" placeholder="Full name" required>
+    <input type="email" id="email" placeholder="Email address" required>
+    <input type="password" id="password" placeholder="Password (min 6 characters)" minlength="6" required>
+    <button type="submit" class="btn-gold">Sign Up</button>
+  </form>
+  <p style="text-align:center; margin-top:18px; font-size:.85rem; color:var(--grey);">
+    Already have an account? <a href="login.html" style="color:var(--gold); text-decoration:underline;">Log in</a>
+  </p>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script>
+  document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const full_name = document.getElementById('fullName').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('formError');
+    const okEl = document.getElementById('formSuccess');
+    errEl.style.display = 'none'; okEl.style.display = 'none';
+
+    const { error } = await supabaseClient.auth.signUp({
+      email, password,
+      options: { data: { full_name } }
+    });
+
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.style.display = 'block';
+      return;
+    }
+    okEl.textContent = 'Account created! Check your email to confirm, then log in.';
+    okEl.style.display = 'block';
+    document.getElementById('signupForm').reset();
+  });
+</script>
+</body>
+</html>
