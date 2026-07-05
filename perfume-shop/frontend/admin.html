@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Essence — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -63,10 +63,12 @@
         <p id="adminMsg" style="margin-top:10px; font-size:.85rem;"></p>
       </div>
 
-      <table class="admin-table">
-        <thead><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th></th></tr></thead>
-        <tbody id="productTableBody"></tbody>
-      </table>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="admin-table">
+          <thead><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th></th></tr></thead>
+          <tbody id="productTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </section>
