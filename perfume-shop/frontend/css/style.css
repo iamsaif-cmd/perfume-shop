@@ -87,9 +87,12 @@ a{text-decoration:none; color:inherit;}
   background:linear-gradient(155deg, rgba(255,255,255,0.88), rgba(255,255,255,0.62));
   border:1px solid var(--glass-border);
   box-shadow:0 14px 34px -16px rgba(51,48,44,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
-  transition:transform .5s var(--spring);
+  /* Deliberately no transform/transition here. Combining a GPU-promoting
+     transform with border-radius + box-shadow on this pill is what caused
+     the black-square rendering bug on mobile Chrome (touch taps trigger a
+     sticky :hover state, which then promoted this element to its own
+     compositor layer mid-shape). Kept fully static to avoid it entirely. */
 }
-.navbar-sticky:hover .navbar-essence{transform:translateY(-2px);}
 .logo{font-family:'Marcellus', serif; font-size:1.4rem; letter-spacing:.12em; color:var(--charcoal);}
 .logo span{color:var(--gold);}
 .nav-links{display:flex; align-items:center; gap:1.8rem;}
