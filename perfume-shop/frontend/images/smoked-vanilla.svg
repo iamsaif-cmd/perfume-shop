@@ -1,0 +1,25 @@
+<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0E2D0"/>
+      <stop offset="100%" stop-color="#DCC0A0"/>
+    </linearGradient>
+    <linearGradient id="glass3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B6F52" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#6B4E38"/>
+      <stop offset="100%" stop-color="#4A3323"/>
+    </linearGradient>
+    <linearGradient id="shine3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#bg3)"/>
+  <ellipse cx="200" cy="430" rx="90" ry="16" fill="#4A3323" opacity="0.2"/>
+  <rect x="140" y="190" width="120" height="210" rx="16" fill="url(#glass3)"/>
+  <rect x="140" y="190" width="120" height="210" rx="16" fill="url(#shine3)"/>
+  <circle cx="200" cy="145" r="40" fill="#5C4230"/>
+  <circle cx="200" cy="145" r="22" fill="#3A281C"/>
+  <rect x="158" y="255" width="84" height="44" rx="8" fill="#FBF6EF" opacity="0.92"/>
+  <text x="200" y="282" font-family="Georgia, serif" font-size="13" fill="#5C4230" text-anchor="middle" letter-spacing="1.5">VANILLA</text>
+</svg>

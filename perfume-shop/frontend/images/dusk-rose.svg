@@ -1,0 +1,25 @@
+<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F2D9DA"/>
+      <stop offset="100%" stop-color="#DDA9AE"/>
+    </linearGradient>
+    <linearGradient id="glass5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#B85C63" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#8C3A42"/>
+      <stop offset="100%" stop-color="#601F27"/>
+    </linearGradient>
+    <linearGradient id="shine5" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#bg5)"/>
+  <ellipse cx="200" cy="430" rx="90" ry="16" fill="#601F27" opacity="0.2"/>
+  <rect x="135" y="185" width="130" height="215" rx="30" fill="url(#glass5)"/>
+  <rect x="135" y="185" width="130" height="215" rx="30" fill="url(#shine5)"/>
+  <rect x="168" y="135" width="64" height="55" rx="10" fill="#7A2F36"/>
+  <ellipse cx="200" cy="110" rx="30" ry="24" fill="#4A171D"/>
+  <rect x="155" y="262" width="90" height="44" rx="8" fill="#FBF6EF" opacity="0.92"/>
+  <text x="200" y="289" font-family="Georgia, serif" font-size="14" fill="#7A2F36" text-anchor="middle" letter-spacing="2">DUSK ROSE</text>
+</svg>

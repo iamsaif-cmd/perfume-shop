@@ -1,0 +1,21 @@
+<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F3DEE6"/><stop offset="100%" stop-color="#DCB6CA"/>
+    </linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8B9CE" stop-opacity="0.95"/><stop offset="55%" stop-color="#C888A8"/><stop offset="100%" stop-color="#9C5A7C"/>
+    </linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/><stop offset="35%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#bg)"/>
+  <ellipse cx="200" cy="430" rx="90" ry="16" fill="#9C5A7C" opacity="0.18"/>
+  <path d="M155 200 Q200 182 245 200 L252 400 Q200 416 148 400 Z" fill="url(#g)"/>
+  <path d="M155 200 Q200 182 245 200 L252 400 Q200 416 148 400 Z" fill="url(#s)"/>
+  <rect x="170" y="148" width="60" height="56" rx="10" fill="#C888A8"/>
+  <circle cx="200" cy="122" r="28" fill="#9C5A7C"/>
+  <rect x="155" y="266" width="90" height="42" rx="8" fill="#FBF6EF" opacity="0.92"/>
+  <text x="200" y="292" font-family="Georgia, serif" font-size="13.5" fill="#8A4A6A" text-anchor="middle" letter-spacing="1.5">ROSE MIRAGE</text>
+</svg>

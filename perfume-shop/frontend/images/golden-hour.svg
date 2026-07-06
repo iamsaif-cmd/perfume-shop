@@ -1,0 +1,21 @@
+<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F7E7C4"/><stop offset="100%" stop-color="#EFC77E"/>
+    </linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5C563" stop-opacity="0.95"/><stop offset="55%" stop-color="#DFA333"/><stop offset="100%" stop-color="#B87A18"/>
+    </linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/><stop offset="35%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#bg)"/>
+  <ellipse cx="200" cy="430" rx="90" ry="16" fill="#B87A18" opacity="0.2"/>
+  <path d="M148 198 Q200 180 252 198 L258 400 Q200 415 142 400 Z" fill="url(#g)"/>
+  <path d="M148 198 Q200 180 252 198 L258 400 Q200 415 142 400 Z" fill="url(#s)"/>
+  <rect x="168" y="146" width="64" height="56" rx="10" fill="#DFA333"/>
+  <circle cx="200" cy="120" r="28" fill="#B87A18"/>
+  <rect x="155" y="264" width="90" height="42" rx="8" fill="#FBF6EF" opacity="0.92"/>
+  <text x="200" y="290" font-family="Georgia, serif" font-size="14" fill="#96620F" text-anchor="middle" letter-spacing="1.5">GOLDEN HOUR</text>
+</svg>
