@@ -32,7 +32,11 @@ body{
     radial-gradient(circle at 25% 85%, rgba(212,175,106,0.35), transparent 40%),
     radial-gradient(circle at 90% 90%, rgba(243,201,194,0.55), transparent 45%),
     linear-gradient(180deg, #FDF9F3, #F7EEE3);
-  background-attachment:fixed;
+  /* Deliberately no background-attachment:fixed — on mobile this forces the
+     browser to repaint the entire gradient on every scroll frame, which is
+     exactly what caused the white flash during fast scrolling. The gradient
+     now scrolls normally with the page (default), which mobile GPUs handle
+     smoothly. */
 }
 h1,h2,h3,.display{
   font-family:'Marcellus', serif;
@@ -444,6 +448,18 @@ footer a{color:var(--gold-bright);}
 #helpBotToggle{
   backdrop-filter:blur(11px) saturate(150%);
   -webkit-backdrop-filter:blur(11px) saturate(150%);
+}
+/* Lighter blur on mobile — less GPU load helps fast-scroll stay smooth on
+   lower-powered phones. */
+@media(max-width:768px){
+  .product-card, .auth-box, .admin-form, .cart-summary, .cart-item, .glass,
+  .filter-bar button, .btn-outline, .btn-gold, .notes-pyramid, .qty-row button,
+  .search-bar, .icon-btn, .toast, .skeleton-card, .modal-box, .stat-card,
+  .rail-card img, .custom-select-trigger, footer, .badge-chip, .add-icon-btn,
+  #backToTop, #helpBotToggle{
+    backdrop-filter:blur(6px) saturate(130%);
+    -webkit-backdrop-filter:blur(6px) saturate(130%);
+  }
 }
 
 /* Smooth, refresh-rate independent motion: all transitions are time-based
