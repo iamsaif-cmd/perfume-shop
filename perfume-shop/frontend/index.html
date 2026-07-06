@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
 <title>Essence — Fine Fragrance</title>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -52,12 +52,18 @@
         <button data-cat="men">Men</button>
         <button data-cat="unisex">Unisex</button>
       </div>
-      <select class="sort-select" id="sortSelect">
-        <option value="default">Sort: Featured</option>
-        <option value="price-asc">Price: Low to High</option>
-        <option value="price-desc">Price: High to Low</option>
-        <option value="name-asc">Name: A–Z</option>
-      </select>
+      <div class="custom-select" id="sortDropdown">
+        <button class="custom-select-trigger" id="sortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span id="sortLabel">Sort: Featured</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="custom-select-options" id="sortOptions" role="listbox">
+          <li data-value="default" class="selected" role="option">Sort: Featured</li>
+          <li data-value="price-asc" role="option">Price: Low to High</li>
+          <li data-value="price-desc" role="option">Price: High to Low</li>
+          <li data-value="name-asc" role="option">Name: A–Z</li>
+        </ul>
+      </div>
     </div>
 
     <div id="recentlyViewedSection" style="display:none; margin-bottom:36px;">
@@ -212,9 +218,34 @@
     loadProducts();
   });
 
-  document.getElementById('sortSelect').addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    renderGrid(sortProducts(lastProducts));
+  const sortDropdown = document.getElementById('sortDropdown');
+  const sortTrigger = document.getElementById('sortTrigger');
+  const sortLabel = document.getElementById('sortLabel');
+  const sortOptions = document.getElementById('sortOptions');
+
+  sortTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = sortDropdown.classList.toggle('open');
+    sortTrigger.setAttribute('aria-expanded', isOpen);
+  });
+
+  sortOptions.querySelectorAll('li').forEach(li => {
+    li.addEventListener('click', () => {
+      sortOptions.querySelectorAll('li').forEach(o => o.classList.remove('selected'));
+      li.classList.add('selected');
+      sortLabel.textContent = li.textContent;
+      currentSort = li.dataset.value;
+      sortDropdown.classList.remove('open');
+      sortTrigger.setAttribute('aria-expanded', 'false');
+      renderGrid(sortProducts(lastProducts));
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!sortDropdown.contains(e.target)) {
+      sortDropdown.classList.remove('open');
+      sortTrigger.setAttribute('aria-expanded', 'false');
+    }
   });
 
   document.getElementById('searchInput').addEventListener('input', (e) => {
