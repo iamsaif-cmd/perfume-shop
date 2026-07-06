@@ -155,7 +155,7 @@
 
     if (!session) {
       guestAddToCart(id, currentQty);
-      refreshCartBadge();
+      refreshCartBadge(); pulseCartBadge();
       showToast('Added to cart — log in at checkout to complete your order.', 'success');
       return;
     }
@@ -163,7 +163,7 @@
     [btn, stickyBtn].forEach(b => { if (b) { b.disabled = true; b.dataset.original = b.textContent; b.textContent = 'Adding…'; } });
     try {
       await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: id, quantity: currentQty }) });
-      refreshCartBadge();
+      refreshCartBadge(); pulseCartBadge();
       showToast('Added to cart', 'success');
     } catch (err) {
       showToast(err.message, 'error');

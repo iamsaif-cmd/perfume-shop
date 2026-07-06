@@ -25,6 +25,15 @@ function formatPrice(n) {
   return `₹${Number(n).toLocaleString('en-IN')}`;
 }
 
+// Briefly pulses the cart badge — called right after a successful add-to-cart
+function pulseCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  if (!badge) return;
+  badge.classList.remove('pulse');
+  void badge.offsetWidth; // restart animation
+  badge.classList.add('pulse');
+}
+
 // Updates the little cart count badge in the navbar, if present
 async function refreshCartBadge() {
   const badge = document.getElementById('cartBadge');
@@ -243,6 +252,97 @@ function confirmModal(message, confirmLabel = 'Delete', cancelLabel = 'Cancel') 
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
   });
 }
+
+// ============ RIPPLE EFFECT ============
+// Adds a small expanding circle from the tap/click point on primary buttons.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-outline, .btn-gold, .add-icon-btn, .filter-bar button');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  const size = Math.max(rect.width, rect.height);
+  ripple.className = 'ripple';
+  ripple.style.width = ripple.style.height = `${size}px`;
+  ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+  ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 650);
+});
+
+// ============ HELP BOT (rule-based FAQ assistant) ============
+// A lightweight on-brand helper — not a live AI, just quick answers to the
+// most common questions people ask a fragrance store, with quick-reply chips.
+const BOT_FAQ = [
+  { keys: ['shipping', 'delivery', 'deliver'], reply: "We ship across India — orders usually arrive in 3–5 business days. Shipping is free on every order." },
+  { keys: ['return', 'refund', 'exchange'], reply: "Unopened fragrances can be returned within 7 days of delivery. Just reach out from your Orders page." },
+  { keys: ['note', 'notes', 'smell', 'scent last', 'longevity'], reply: "Every product page shows the full note pyramid — top, heart, and base — so you know exactly how a scent evolves." },
+  { keys: ['order', 'track', 'status'], reply: "You can see all your past orders anytime under the 'Orders' tab in the menu." },
+  { keys: ['payment', 'pay', 'cod', 'cash'], reply: "Right now checkout creates your order directly — payment gateway details will show at checkout." },
+  { keys: ['wishlist', 'save', 'favorite'], reply: "Tap the heart icon on any fragrance to save it to your Wishlist for later." },
+  { keys: ['contact', 'support', 'help', 'email'], reply: "You can reach us at hello@essence.com — we usually reply within a day." },
+  { keys: ['stock', 'available', 'sold out'], reply: "If a fragrance shows 'Out of Stock', check back soon — we restock in small batches regularly." },
+];
+const BOT_QUICK_REPLIES = ['Shipping', 'Returns', 'Track order', 'Contact'];
+
+function initHelpBot() {
+  if (document.getElementById('helpBotToggle')) return;
+
+  const toggle = document.createElement('button');
+  toggle.id = 'helpBotToggle';
+  toggle.setAttribute('aria-label', 'Open help chat');
+  toggle.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+  const panel = document.createElement('div');
+  panel.id = 'helpBotPanel';
+  panel.innerHTML = `
+    <div class="bot-header">
+      <span>Essence Assistant</span>
+      <button id="botClose" aria-label="Close">×</button>
+    </div>
+    <div class="bot-body" id="botBody">
+      <div class="bot-msg bot">Hi! I'm here to help — ask about shipping, returns, notes, or your orders.</div>
+    </div>
+    <div class="bot-quick-replies" id="botQuickReplies"></div>
+  `;
+
+  document.body.appendChild(toggle);
+  document.body.appendChild(panel);
+
+  const quickWrap = panel.querySelector('#botQuickReplies');
+  BOT_QUICK_REPLIES.forEach(label => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = () => handleBotMessage(label);
+    quickWrap.appendChild(b);
+  });
+
+  toggle.onclick = () => panel.classList.toggle('open');
+  panel.querySelector('#botClose').onclick = () => panel.classList.remove('open');
+}
+
+function handleBotMessage(text) {
+  const body = document.getElementById('botBody');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'bot-msg user';
+  userMsg.textContent = text;
+  body.appendChild(userMsg);
+
+  const lower = text.toLowerCase();
+  const match = BOT_FAQ.find(f => f.keys.some(k => lower.includes(k)));
+  const reply = match ? match.reply : "I'm not totally sure about that one — try our Shop page, or email hello@essence.com and a real person will help.";
+
+  setTimeout(() => {
+    const botMsg = document.createElement('div');
+    botMsg.className = 'bot-msg bot';
+    botMsg.textContent = reply;
+    body.appendChild(botMsg);
+    body.scrollTop = body.scrollHeight;
+  }, 350);
+
+  body.scrollTop = body.scrollHeight;
+}
+
+document.addEventListener('DOMContentLoaded', initHelpBot);
 
 document.addEventListener('DOMContentLoaded', renderAuthNav);
 

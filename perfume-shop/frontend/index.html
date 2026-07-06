@@ -108,20 +108,26 @@
       return;
     }
     grid.innerHTML = products.map((p, i) => `
-      <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms; position:relative;">
+      <div class="product-card reveal" style="transition-delay:${(i % 8) * 70}ms;">
         <button class="wish-btn ${isWishlisted(p.id) ? 'active' : ''}" aria-label="Toggle wishlist" onclick="handleWishlist(event, '${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
         </button>
-        <a href="product.html?id=${p.id}">
-          <img src="${p.image_url}" alt="${p.name}">
-        </a>
+        <div class="card-media">
+          <span class="badge-chip">${p.category}</span>
+          <a href="product.html?id=${p.id}"><img src="${p.image_url}" alt="${p.name}"></a>
+          <a class="quick-view" href="product.html?id=${p.id}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Quick View
+          </a>
+        </div>
         <div class="product-body">
-          <p class="cat">${p.category}</p>
           <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
-          <p class="price">${formatPrice(p.price)}</p>
-          <button class="btn-outline add-btn" onclick="quickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
-            ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-          </button>
+          <div class="price-row">
+            <span class="price">${formatPrice(p.price)}</span>
+            <button class="add-icon-btn" aria-label="Add to cart" onclick="quickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     `).join('');
@@ -185,13 +191,13 @@
     // Guests can add to cart too — we merge it into their account at login.
     if (!session) {
       guestAddToCart(productId, 1);
-      refreshCartBadge();
+      refreshCartBadge(); pulseCartBadge();
       showToast('Added to cart — log in at checkout to complete your order.', 'success');
       return;
     }
     try {
       await apiFetch('/cart', { method: 'POST', body: JSON.stringify({ product_id: productId, quantity: 1 }) });
-      refreshCartBadge();
+      refreshCartBadge(); pulseCartBadge();
       showToast('Added to cart', 'success');
     } catch (err) {
       showToast(err.message, 'error');
